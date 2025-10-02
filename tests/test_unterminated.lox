@@ -1,0 +1,5 @@
+print "Before comment";
+
+/* This is an unterminated block comment
+   that should cause an error
+print "This should not be reached";

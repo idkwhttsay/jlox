@@ -77,10 +77,15 @@ class Scanner {
                 break;
             case '/':
                 if(match('/')) {
+                    // Single-line comment
                     while(peek() != '\n' && !isAtEnd()) advance();
+                } else if(match('*')) {
+                    // Block comment
+                    blockComment();
                 } else {
                     addToken(SLASH);
                 }
+                break;
             case ' ':
             case '\r':
             case '\t': break;
@@ -154,6 +159,40 @@ class Scanner {
 
         String value = source.substring(start + 1, current - 1);
         addToken(STRING, value);
+    }
+
+    private void blockComment() {
+        int nesting = 1;
+        
+        while (nesting > 0 && !isAtEnd()) {
+            // Check for nested block comment start
+            if (peek() == '/' && peekNext() == '*') {
+                advance(); // consume '/'
+                advance(); // consume '*'
+                nesting++;
+                continue;
+            }
+            
+            // Check for block comment end
+            if (peek() == '*' && peekNext() == '/') {
+                advance(); // consume '*'
+                advance(); // consume '/'
+                nesting--;
+                continue;
+            }
+            
+            // Handle newlines
+            if (peek() == '\n') {
+                line++;
+            }
+            
+            advance();
+        }
+        
+        // If we reach the end of file with unclosed comments, report error
+        if (nesting > 0) {
+            Lox.error(line, "Unterminated block comment.");
+        }
     }
 
     private char peek() {
