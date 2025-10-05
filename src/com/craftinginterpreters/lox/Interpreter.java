@@ -34,9 +34,8 @@ class Interpreter implements Expr.Visitor<Object> {
             case MINUS:
                 checkNumberOperand(expr.operator, right);
                 return - (double)right;
+            default: return null;
         }
-
-        return null;
     }
 
     @Override
@@ -46,26 +45,26 @@ class Interpreter implements Expr.Visitor<Object> {
 
         switch (expr.operator.type) {
             case GREATER:
-                checkNumberOperand(expr.operator, left, right);
-                return (double)left > (double)right;
+                checkComparisonOperand(expr.operator, left, right);
+                return compareValues(left, right) > 0;
             case GREATER_EQUAL:
-                checkNumberOperand(expr.operator, left, right);
-                return (double)left >= (double)right;
+                checkComparisonOperand(expr.operator, left, right);
+                return compareValues(left, right) >= 0;
             case LESS:
-                checkNumberOperand(expr.operator, left, right);
-                return (double)left < (double)right;
+                checkComparisonOperand(expr.operator, left, right);
+                return compareValues(left, right) < 0;
             case LESS_EQUAL:
-                checkNumberOperand(expr.operator, left, right);
-                return (double)left <= (double)right;
+                checkComparisonOperand(expr.operator, left, right);
+                return compareValues(left, right) <= 0;
+            case BANG_EQUAL:
+                checkComparisonOperand(expr.operator, left, right);
+                return compareValues(left, right) != 0;
+            case EQUAL_EQUAL:
+                checkComparisonOperand(expr.operator, left, right);
+                return compareValues(left, right) == 0;
             case MINUS:
                 checkNumberOperand(expr.operator, left, right);
                 return (double)left - (double)right;
-            case BANG_EQUAL:
-                checkNumberOperand(expr.operator, left, right);
-                return !isEqual(left, right);
-            case EQUAL_EQUAL:
-                checkNumberOperand(expr.operator, left, right);
-                return isEqual(left, right);
             case PLUS:
                 if(left instanceof Double && right instanceof Double) {
                     return (double)left + (double)right;
@@ -83,9 +82,8 @@ class Interpreter implements Expr.Visitor<Object> {
             case STAR:
                 checkNumberOperand(expr.operator, left, right);
                 return (double)left * (double)right;
+            default: return null;
         }
-
-        return null;
     }
 
     private void checkNumberOperand(Token operator, Object operand) {
@@ -103,11 +101,62 @@ class Interpreter implements Expr.Visitor<Object> {
         throw new RuntimeError(operator, "Division by zero is illegal.");
     }
 
-    private boolean isEqual(Object a, Object b) {
-        if (a == null && b == null) return true;
-        if (a == null) return false;
-
-        return a.equals(b);
+    private void checkComparisonOperand(Token operator, Object left, Object right) {
+        if (left == null || right == null) return; // nil can be compared with anything
+        if (left.getClass() == right.getClass()) return; // same types always comparable
+        
+        // try to parse string as number and compare it
+        if ((left instanceof Double && right instanceof String) || (left instanceof String && right instanceof Double)) return;
+        
+        if (left instanceof Boolean || right instanceof Boolean) return;
+        
+        throw new RuntimeError(operator, 
+            "Cannot compare " + getTypeName(left) + " and " + getTypeName(right) + ".");
+    }
+    
+    private String getTypeName(Object object) {
+        if (object == null) return "nil";
+        if (object instanceof Double) return "number";
+        if (object instanceof String) return "string";
+        if (object instanceof Boolean) return "boolean";
+        return object.getClass().getSimpleName().toLowerCase();
+    }
+    
+    private int compareValues(Object left, Object right) {
+        if (left == null && right == null) return 0;    // nil == nil
+        if (left == null) return -1;                    // nil < anything
+        if (right == null) return 1;                    // anyhting > nil
+        
+        // same type comparisons
+        if (left instanceof Double && right instanceof Double) return Double.compare((Double)left, (Double)right);
+        if (left instanceof String && right instanceof String) return ((String)left).compareTo((String)right);
+        if (left instanceof Boolean && right instanceof Boolean) return Boolean.compare((Boolean)left, (Boolean)right);
+        
+        // mixed type comparisons
+        if (left instanceof Double && right instanceof String) {
+            try {
+                return Double.compare((Double)left, Double.parseDouble((String)right));
+            } catch (NumberFormatException e) { // number < string (according to ordering)
+                return -1;
+            }
+        }
+        if (left instanceof String && right instanceof Double) {
+            try {
+                return Double.compare(Double.parseDouble((String)left), (Double)right);
+            } catch (NumberFormatException e) { // number < string (according to ordering)
+                return 1;
+            }
+        }
+        
+        return Integer.compare(getTypeOrder(left), getTypeOrder(right));
+    }
+    
+    private int getTypeOrder(Object object) { // nil < boolean < number < string
+        if (object == null) return 0;               // nil
+        if (object instanceof Boolean) return 1;    // boolean
+        if (object instanceof Double) return 2;     // number
+        if (object instanceof String) return 3;     // string
+        return 4; // unknown types come last
     }
 
     private String stringify(Object object) {
