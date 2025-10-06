@@ -12,6 +12,7 @@ public class Lox {
     private static Interpreter interpreter = new Interpreter();
     static boolean hadError = false;
     static boolean hadRuntimeError = false;
+    private static boolean suppressErrors = false;
 
     public static void main(String[] args) throws IOException {
         if(args.length > 1) {
@@ -39,7 +40,7 @@ public class Lox {
             System.out.print("> ");
             String line = reader.readLine();
             if(line == null) break;
-            run(line);
+            runRepl(line);
             hadError = false;
         }
     }
@@ -48,11 +49,41 @@ public class Lox {
         Scanner scanner = new Scanner(source);
         List <Token> tokens = scanner.scanTokens();
         Parser parser = new Parser(tokens);
-        Expr expression = parser.parse();
+        List<Stmt> statements = parser.parse();
 
         if(hadError) return;
 
-        interpreter.interpret(expression);
+        interpreter.interpret(statements);
+    }
+
+    private static void runRepl(String source) {
+        Scanner scanner = new Scanner(source);
+        List<Token> tokens = scanner.scanTokens();
+        
+        // try to parse as an expression (with error suppression)
+        suppressErrors = true;
+        Parser parser = new Parser(tokens);
+        Expr expression = parser.parseAsExpression();
+        suppressErrors = false;
+        
+        if (expression != null && !hadError) {
+            // parsed as an expression
+            Object result = interpreter.interpretExpression(expression);
+            if (result != null) {
+                System.out.println(interpreter.stringify(result));
+            }
+        } else {
+            // parsed as a statement
+            hadError = false;
+            scanner = new Scanner(source);
+            tokens = scanner.scanTokens();
+            parser = new Parser(tokens);
+            List<Stmt> statements = parser.parse();
+
+            if(hadError) return;
+
+            interpreter.interpret(statements);
+        }
     }
 
     static void error(int line, String message) {
@@ -65,7 +96,9 @@ public class Lox {
     }
 
     private static void report(int line, String where, String message) {
-        System.err.println("[line " + line + "] Error" + where + ": " + message);
+        if (!suppressErrors) {
+            System.err.println("[line " + line + "] Error" + where + ": " + message);
+        }
         hadError = true;
     }
 
