@@ -11,6 +11,7 @@ abstract class Expr {
         R visitLogicalExpr(Logical expr);
         R visitUnaryExpr(Unary expr);
         R visitVariableExpr(Variable expr);
+        R visitBreakExpr(Break expr);
     }
     static class Assign extends Expr {
         Assign(Token name, Expr value) {
@@ -100,6 +101,17 @@ abstract class Expr {
         }
 
         final Token name;
+    }
+    static class Break extends Expr {
+        Break(Token token) {
+            this.token = token;
+        }
+
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitBreakExpr(this);
+        }
+
+        final Token token;
     }
 
     abstract <R> R accept(Visitor<R> visitor);

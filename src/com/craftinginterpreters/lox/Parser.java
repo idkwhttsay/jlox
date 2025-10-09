@@ -275,6 +275,7 @@ class Parser {
     }
 
     private Expr primary() {
+        if(match(BREAK)) return new Expr.Break(previous());
         if(match(FALSE)) return new Expr.Literal(false);
         if(match(TRUE)) return new Expr.Literal(true);
         if(match(NIL)) return new Expr.Literal(null);
@@ -334,9 +335,8 @@ class Parser {
                 case PRINT:
                 case RETURN:
                     return;
+                default: advance();
             }
-
-            advance();
         }
     }
 

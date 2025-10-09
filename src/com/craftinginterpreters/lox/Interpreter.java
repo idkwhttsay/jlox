@@ -3,6 +3,12 @@ package com.craftinginterpreters.lox;
 import java.util.List;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    private static class BreakException extends RuntimeError {
+        BreakException(Token token, String message) {
+            super(token, message);
+        }
+    }
+    
     private Environment environment = new Environment();
 
     void interpret(List<Stmt> statements) {
@@ -89,9 +95,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitWhileStmt(Stmt.While stmt) {
-        while(isTruthy(evaluate(stmt.condition))) {
-            execute(stmt.body);
-        }
+        try {
+            while(isTruthy(evaluate(stmt.condition))) {
+                execute(stmt.body);
+            }
+        } catch (BreakException ex) { }
 
         return null;
     }
@@ -101,6 +109,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object value = evaluate(expr.value);
         environment.assign(expr.name, value);
         return value;
+    }
+
+    @Override
+    public Object visitBreakExpr(Expr.Break expr) {
+        throw new BreakException(expr.token, "Break expression out of while/for loop enclosing.");
     }
 
     @Override
