@@ -186,24 +186,29 @@ class Parser {
     private Stmt.Function function(String kind, boolean isStatic) {
         Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
 
-        consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
-
         List<Token> parameters = new ArrayList<>();
-        if(!check(RIGHT_PAREN)) {
-            do {
-                if (parameters.size() >= 255) {
-                    error(peek(), "Can't have more than 255 parameters.");
-                }
+        boolean isGetter = false;
 
-                parameters.add(consume(IDENTIFIER, "Expect parameter name."));
-            } while(match(COMMA));
+        if(match(LEFT_PAREN)) {
+            if(!check(RIGHT_PAREN)) {
+                do {
+                    if (parameters.size() >= 255) {
+                        error(peek(), "Can't have more than 255 parameters.");
+                    }
+
+                    parameters.add(consume(IDENTIFIER, "Expect parameter name."));
+                } while(match(COMMA));
+            }
+
+            consume(RIGHT_PAREN, "Expect ')' after parameters.");
+        } else {
+            // No parameter list — treat this as a getter (no params)
+            isGetter = true;
         }
-
-        consume(RIGHT_PAREN, "Expect ')' after parameters.");
 
         consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
         List<Stmt> body = block();
-        return new Stmt.Function(name, parameters, body, isStatic);
+        return new Stmt.Function(name, parameters, body, isStatic, isGetter);
     }
 
     private List<Stmt> block() {

@@ -102,11 +102,12 @@ abstract class Stmt {
         final Stmt body;
     }
     static class Function extends Stmt {
-        Function(Token name, List<Token> params, List<Stmt> body, boolean isStatic) {
+        Function(Token name, List<Token> params, List<Stmt> body, boolean isStatic, boolean isGetter) {
             this.name = name;
             this.params = params;
             this.body = body;
             this.isStatic = isStatic;
+            this.isGetter = isGetter;
         }
 
         <R> R accept(Visitor<R> visitor) {
@@ -117,6 +118,7 @@ abstract class Stmt {
         final List<Token> params;
         final List<Stmt> body;
         final boolean isStatic;
+        final boolean isGetter;
     }
     static class Return extends Stmt {
         Return(Token keyword, Expr value) {
