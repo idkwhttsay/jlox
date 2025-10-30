@@ -1,0 +1,55 @@
+class Counter {
+  init() {
+    this.count = 0;
+  }
+
+  inc() {
+    this.count = this.count + 1;
+    print this.count;
+  }
+
+  getInc() {
+    fun f() {
+      this.count = this.count + 1;
+      print this.count;
+    }
+    return f;
+  }
+}
+
+class Person {
+  init(name) {
+    this.name = name;
+  }
+
+  greet() {
+    print "Hello, " + this.name + "!";
+  }
+}
+
+// Print class objects
+print Counter; // Counter
+print Person;  // Person
+
+// Work with Counter
+var c = Counter();
+print c;       // Counter instance
+c.inc();       // 1
+var f = c.getInc();
+f();           // 2
+var g = c.inc;  // getting the method yields a bound function
+g();           // 3
+
+// Work with Person and fields
+var p = Person("Ada");
+p.greet();     // Hello, Ada!
+print p.name;   // Ada
+
+// Mutate and read fields directly
+p.age = 36;
+print p.age;    // 36
+
+// Ensure instances maintain separate state
+var other = Person("Bob");
+other.greet();  // Hello, Bob!
+print c;        // Counter instance
