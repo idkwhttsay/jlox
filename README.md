@@ -29,13 +29,6 @@ This repository contains a Java implementation of the Lox interpreter from "Craf
   print c.area; // ~50.2655
   ```
 
-These extensions were implemented by:
-
-- Parser: accepts a method form without `()` and marks it as a getter. A leading `class` token inside a class body marks a static method.
-- AST: `Stmt.Function` carries `isStatic` and `isGetter` flags.
-- Resolver: static methods are resolved without creating a `this` scope; instance methods/create `this` in their scope.
-- Interpreter: classes now store both instance and static method maps. Instance property reads execute a getter if present; static getters are executed on the class object. `LoxFunction.bind` accepts a generic `this` value so getters/methods can be bound to either instances or class objects.
-
 Design notes and caveats
 - Field precedence: instance fields (explicitly set on an instance) take precedence over getters with the same name. That is, if an instance has a stored field `x`, reading `instance.x` returns the field value and does not invoke a getter named `x`.
 - Getters have no parameters by design. Calling `obj.getter()` is not how getters are invoked — they are executed on property access `obj.getter`.
@@ -56,8 +49,6 @@ Run the interpreter on a single test file (example):
 ```bash
 java -cp out com.craftinginterpreters.lox.Lox tests/classes.lox
 ```
-
-If you maintain another build/run workflow (IDE, Gradle, Maven), adapt the commands accordingly.
 
 Testing
 - A combined class-oriented test was added at `tests/classes.lox`. It exercises instance methods, initializers, nested closures capturing `this`, direct field access, static methods, and a static getter example.
