@@ -48,10 +48,6 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         declare(stmt.name);
         define(stmt.name);
-
-        beginScope();
-        scopes.peek().put("this", true);
-
         for (Stmt.Function method : stmt.methods) {
             FunctionType declaration = FunctionType.METHOD;
 
@@ -59,10 +55,18 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
                 declaration = FunctionType.INITIALIZER;
             }
 
-            resolveFunction(method, declaration);
-        }
+            if (method.isStatic) {
+                // static methods do not get 'this'
+                resolveFunction(method, declaration);
+            } else {
+                beginScope();
+                scopes.peek().put("this", true);
 
-        endScope();
+                resolveFunction(method, declaration);
+
+                endScope();
+            }
+        }
         currentClass = enclosingClass;
 
         return null;
@@ -134,7 +138,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             if(currentFunction == FunctionType.INITIALIZER) {
                 Lox.error(stmt.keyword, "Can't return a value from an initializer.");
             }
-            
+
             resolve(stmt.value);
         }
 

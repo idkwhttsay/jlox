@@ -1,0 +1,16 @@
+class Math {
+  class square(n) {
+    return n * n;
+  }
+
+  class abs(n) {
+    if (n < 0) {
+        return -n;
+    }
+
+    return n;
+  }
+}
+
+print Math.square(3); // Prints "9".
+print Math.abs(-3);   // Prints "3".
