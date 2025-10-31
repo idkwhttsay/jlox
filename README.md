@@ -53,6 +53,42 @@ java -cp out com.craftinginterpreters.lox.Lox tests/classes.lox
 Testing
 - A combined class-oriented test was added at `tests/classes.lox`. It exercises instance methods, initializers, nested closures capturing `this`, direct field access, static methods, and a static getter example.
 
+## Inheritance
+
+- Syntax: `class Sub < Base { ... }`
+- Instance method lookup walks the superclass chain.
+- Getters (methods declared without parentheses) are inherited and can be overridden in subclasses.
+- Static members (declared with leading `class`) live on the class object, are inherited by subclasses, and can be overridden.
+
+Example:
+
+```lox
+class Base {
+  init(n) { this.n = n; }
+  describe() { return "Base(" + this.n + ")"; }
+  area { return 0; }              // instance getter
+
+  class kind { return "base"; }   // static getter
+  class id() { return "Base"; }   // static method
+}
+
+class Sub < Base {
+  describe() { return "Sub->" + super.describe(); }
+  area { return this.n * this.n; } // override getter
+
+  class kind { return "sub"; }      // override static getter
+}
+
+print Base.kind;        // "base"
+print Sub.kind;         // "sub" (inherits and overrides static getter)
+print Base.id();        // "Base"
+print Sub.id();         // "Base" (inherits static method)
+
+var s = Sub(3);
+print s.describe();     // "Sub->Base(3)"
+print s.area;           // 9
+```
+
 Other notable features
 - Proper type comparisons: the interpreter implements a `compareValues` routine that supports comparing numbers, strings, booleans, nil, and mixed-type comparisons with a deterministic ordering and sensible fallbacks.
 - Break statements: `break` is supported as an expression to exit the nearest enclosing loop (`for`/`while`). The scanner, parser, resolver, and interpreter include full support and diagnostics for invalid `break` usage.
