@@ -1,0 +1,72 @@
+// Comprehensive class/inheritance/static/getter example
+
+class Math {
+  class pi() { return 3.141592653; }
+  class twoPi { return 2 * Math.pi(); } // static getter
+}
+
+class Shape {
+  init(name) { this.name = name; }
+
+  describe() { return "Shape(" + this.name + ")"; }
+
+  // base getter
+  area { return 0; }
+
+  // static members on base
+  class kind { return "shape"; }      // static getter
+  class explain() { return "Base class"; }
+}
+
+class Circle < Shape {
+  init(name, radius) {
+    super.init(name);
+    this.radius = radius;
+  }
+
+  describe() { return super.describe() + " radius=" + this.radius; }
+
+  // override getter; uses static Math method
+  area { return Math.pi() * this.radius * this.radius; }
+
+  // static members on subclass
+  class kind { return "circle"; }      // static getter override
+  class unit() { return "units^2"; }
+  class info() { return super.explain() + " -> Circle"; } // call superclass static
+}
+
+class Ellipse < Shape {
+  init(name, a, b) {
+    super.init(name);
+    this.a = a; this.b = b;
+  }
+
+  area { return Math.pi() * this.a * this.b; }
+
+  class explain() { return super.explain() + " -> Ellipse"; }
+}
+
+// Static methods and getters
+print Shape.kind;         // shape
+print Circle.kind;        // circle
+print Math.pi();          // 3.141592653
+print Math.twoPi;         // 6.283185306
+print Circle.info();      // Base class -> Circle
+print Ellipse.explain();  // Base class -> Ellipse
+
+// Instances and getters
+var c = Circle("unit", 3);
+print c.describe();       // Shape(unit) radius=3
+print c.area;             // 28.274333877
+
+var s = Shape("plain");
+print s.describe();       // Shape(plain)
+print s.area;             // 0
+
+var e = Ellipse("oval", 2, 5);
+print e.describe();       // Shape(oval)
+print e.area;             // 31.41592653
+
+// Method binding remains bound to instance
+var d = c.describe;
+print d();                // Shape(unit) radius=3

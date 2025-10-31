@@ -5,10 +5,12 @@ import java.util.Map;
 
 class LoxClass implements LoxCallable {
     final String name;
+    final LoxClass superclass;
     private final Map<String, LoxFunction> methods;
     private final Map<String, LoxFunction> staticMethods;
     
-    LoxClass(String name, Map<String, LoxFunction> methods, Map<String, LoxFunction> staticMethods) {
+    LoxClass(String name, LoxClass superclass, Map<String, LoxFunction> methods, Map<String, LoxFunction> staticMethods) {
+        this.superclass = superclass;
         this.name = name;
         this.methods = methods;
         this.staticMethods = staticMethods;
@@ -36,12 +38,20 @@ class LoxClass implements LoxCallable {
             return methods.get(name);
         }
 
+        if (superclass != null) {
+            return superclass.findMethod(name);
+        }
+
         return null;
     }
 
     LoxFunction findStaticMethod(String name) {
         if(staticMethods.containsKey(name)) {
             return staticMethods.get(name);
+        }
+
+        if (superclass != null) {
+            return superclass.findStaticMethod(name);
         }
 
         return null;

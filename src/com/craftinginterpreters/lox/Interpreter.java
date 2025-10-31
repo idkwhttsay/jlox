@@ -80,7 +80,21 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+        Object superclass = null;
+        if (stmt.superclass != null) {
+            superclass = evaluate(stmt.superclass);
+            if (!(superclass instanceof LoxClass)) {
+                throw new RuntimeError(stmt.superclass.name, "Superclass must be a class.");
+            }
+        }
+    
         environment.define(stmt.name.lexeme, null);
+
+        if (stmt.superclass != null) {
+            environment = new Environment(environment);
+            environment.define("super", superclass);
+        }
+
         Map<String, LoxFunction> methods = new HashMap<>();
         Map<String, LoxFunction> staticMethods = new HashMap<>();
         for (Stmt.Function method : stmt.methods) {
@@ -93,7 +107,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             }
         }
 
-        LoxClass klass = new LoxClass(stmt.name.lexeme, methods, staticMethods);
+        LoxClass klass = new LoxClass(stmt.name.lexeme, (LoxClass)superclass, methods, staticMethods);
+
+        if (superclass != null) {
+            environment = environment.enclosing;
+        }
+
         environment.assign(stmt.name, klass);
         return null;
     }
@@ -314,9 +333,9 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             LoxFunction method = ((LoxClass) object).findStaticMethod(expr.name.lexeme);
             if(method != null) {
                 if (method.isGetter()) {
-                    return method.bind(object).call(this, new java.util.ArrayList<>());
+                    return method.call(this, new java.util.ArrayList<>());
                 }
-                return method.bind(object);
+                return method; // return unbound static method
             }
         }
 
@@ -333,6 +352,26 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object value = evaluate(expr.value);
         ((LoxInstance) object).set(expr.name, value);
         return value;
+    }
+
+    @Override
+    public Object visitSuperExpr(Expr.Super expr) {
+        int distance = locals.get(expr);
+        LoxClass superclass = (LoxClass)environment.getAt(distance, "super");
+
+        Object object = environment.getAt(distance - 1, "this");
+
+        LoxFunction method = superclass.findMethod(expr.method.lexeme);
+        if (method != null) {
+            return method.bind(object);
+        }
+
+        LoxFunction staticMethod = superclass.findStaticMethod(expr.method.lexeme);
+        if (staticMethod != null) {
+            return staticMethod.bind(superclass);
+        }
+
+        throw new RuntimeError(expr.method, "Undefined property '" + expr.method.lexeme + "'.");
     }
 
     @Override
